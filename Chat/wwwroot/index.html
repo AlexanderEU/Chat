@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Chat</title>
+</head>
+
+<body>
+    <div id="loginBlock">
+        Введите логин:<br />
+        <input id="userName" type="text" />
+        <input id="loginBtn" type="button" value="Войти" />
+    </div><br />
+
+    <div id="header"></div><br />
+
+    <div id="inputForm">
+        <input type="text" id="message" disabled/>
+        <input type="button" id="sendBtn" value="Отправить" disabled/>
+    </div>
+    <div id="chatroom"></div>
+    <script src="js/signalr/dist/browser/signalr.min.js"></script>
+
+    <script>
+        const hubConnection = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+
+        let userName = '';
+        // получение сообщения от сервера
+        hubConnection.on('Send', function (message, userName) {
+
+            // создаем элемент <b> для имени пользователя
+            let userNameElem = document.createElement("b");
+            userNameElem.appendChild(document.createTextNode(userName + ': '));
+
+            // создает элемент <p> для сообщения пользователя
+            let elem = document.createElement("p");
+            elem.appendChild(userNameElem);
+            elem.appendChild(document.createTextNode(message));
+
+            var firstElem = document.getElementById("chatroom").firstChild;
+            document.getElementById("chatroom").insertBefore(elem, firstElem);
+
+        });
+
+        document.getElementById("loginBtn").addEventListener("click", function (e) {
+            userName = document.getElementById("userName").value;
+
+            if (userName.trim() != "") { // проверяем чтобы имя пользователя было не пустым а также убираем лишнии пробелы
+                // выводим имя пользователя
+                document.getElementById("message").disabled = false; // делаем поле для ввода сообщения активным
+                document.getElementById("sendBtn").disabled = false; // делаем кнопку для ввода ссобщения активным
+                document.getElementById("header").innerHTML = '<h3>Добро пожаловать ' + userName + '</h3>';
+                document.getElementById("userName").disabled = true; // делаем поле для ввода логина не активным чтобы пользователь не логинился несколько раз
+                document.getElementById("loginBtn").disabled = true; // делаем кнопку для ввода логина неактивным
+
+                // отправка сообщения на сервер
+                document.getElementById("sendBtn").addEventListener("click", function (e) {
+                    let message = document.getElementById("message").value;
+                    hubConnection.invoke("Send", message, userName);
+                });
+
+            }
+            else {
+                document.getElementById("header").innerHTML = '<h3>Пожалуйста введите имя пользователя!</h3>';
+            }
+        });
+
+
+        hubConnection.start();
+    </script>
+</body>
+</html>
